@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
 CORS(app)
 
-SUPABASE_URL = "https://dbvpdrikclcbemupgmjr.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRidnBkcmlrY2xjYmVtdXBnbWpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODc2NDksImV4cCI6MjA1NzU2MzY0OX0.HyxtnWSSr-uEF47bRLQU68kPo3xxGUh8WuJDsOB3FU4"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 # Setup Supabase connection
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 

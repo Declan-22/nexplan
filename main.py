@@ -5,15 +5,17 @@ import json
 import requests
 from datetime import datetime, timedelta
 from ai_functions import get_location_info, create_structured_itinerary
+import os
 
 # API Keys and URLs
-SUPABASE_URL = "https://dbvpdrikclcbemupgmjr.supabase.co"
-SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRidnBkcmlrY2xjYmVtdXBnbWpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODc2NDksImV4cCI6MjA1NzU2MzY0OX0.HyxtnWSSr-uEF47bRLQU68kPo3xxGUh8WuJDsOB3FU4"
-OPENROUTE_API_KEY = "5b3ce3597851110001cf6248589aee679bf34b429cae66983b102322"  # Replace with your actual API key
-GEONAMES_USERNAME = "curiousclump"  # Replace with your actual username
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+GEONAMES_USERNAME = os.getenv("GEONAMES_USERNAME")
+OPENROUTE_API_KEY = os.getenv("OPENROUTE_API_KEY")
 
 # Create a Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Initialize the Ollama client
 client = ollama.Client()

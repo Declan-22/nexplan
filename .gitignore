@@ -4,6 +4,3 @@ Modelfile
 venv
 __pycache__
 requirements.txt
-ai_functions.py
-main.py
-server.py

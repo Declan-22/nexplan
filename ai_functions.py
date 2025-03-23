@@ -3,9 +3,11 @@ import ollama
 import requests
 import json
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
 
-GEONAMES_USERNAME = "curiousclump"
-OPENROUTE_API_KEY = "5b3ce3597851110001cf6248589aee679bf34b429cae66983b102322"
+GEONAMES_USERNAME = os.getenv("GEONAMES_USERNAME")
+OPENROUTE_API_KEY = os.getenv("OPENROUTE_API_KEY")
 client = ollama.Client()
 model = "AI-Planner"
 
