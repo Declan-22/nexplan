@@ -232,3 +232,4 @@ def parse_date(date_string):
     except ValueError:
         print("Invalid date format. Using current date instead.")
         return datetime.now()
+        

@@ -28,13 +28,9 @@ def log_to_supabase(log_message: str):
     except Exception as e:
         print(f"Supabase log error: {str(e)}")
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+@app.route('/')
+def health_check():
+    return jsonify({"status": "healthy", "message": "API is running"})
 
 @app.route('/api/gather_info', methods=['POST'])
 def gather_user_info():
