@@ -1,0 +1,6 @@
+.qodo
+.env
+Modelfile
+venv
+__pycache__
+requirements.txt
