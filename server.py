@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
-CORS(app)
+CORS(app, origins=["https://nexplan-wvdf.onrender.com"])
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
