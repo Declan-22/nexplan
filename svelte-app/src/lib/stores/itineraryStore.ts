@@ -51,6 +51,8 @@ export async function createItinerary(info: UserInfo): Promise<string | null> {
     
     const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     const response = await fetch(`${VITE_API_URL}/itinerary`, {
+    
+      
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
