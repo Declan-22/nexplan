@@ -8,12 +8,26 @@ import json
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
-CORS(app, origins="*")
+CORS(app, 
+     origins=["http://localhost:5173", "https://nexplan-wvdf.onrender.com/"],
+     supports_credentials=True,
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"])
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 # Setup Supabase connection
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+def json_serialize(obj):
+    """
+    Custom JSON serializer to handle non-serializable objects
+    """
+    try:
+        return json.dumps(obj)
+    except TypeError:
+        # If standard serialization fails, convert to string
+        return str(obj)
 
 def log_to_supabase(log_message: str):
     try:
@@ -44,10 +58,21 @@ def gather_user_info():
 
 @app.route('/api/itinerary', methods=['POST'])
 def create_itinerary():
+    
+    if not request.is_json:
+        return jsonify({
+            "status": "error", 
+            "message": "Request must be JSON"
+        }), 400
+    
+    print("Full request headers:", request.headers)
+    print("Request content type:", request.content_type)
     try:
         # Explicitly log the incoming request data
         raw_data = request.get_data(as_text=True)
         print(f"Received raw data: {raw_data}")
+
+        
         
         # Try parsing JSON with error handling
         try:
@@ -119,7 +144,7 @@ def create_itinerary():
         try:
             response = supabase.table('itineraries').insert({ 
                 "id": itinerary_id, 
-                "itinerary_data": json.dumps(itinerary_data),  # Convert to JSON string 
+                "itinerary_data": json_serialize(itinerary_data),
                 "destination": destination, 
                 "budget": budget, 
                 "created_at": datetime.now().isoformat() 
@@ -139,6 +164,10 @@ def create_itinerary():
             "id": itinerary_id, 
             "itinerary": itinerary_data 
         }
+
+        print(f"Full response data: {response_data}")
+        print(f"Itinerary data type: {type(itinerary_data)}")
+        print(f"Itinerary data keys: {itinerary_data.keys() if isinstance(itinerary_data, dict) else 'Not a dictionary'}")
         print(f"Returning response: {json.dumps(response_data)}")
         return jsonify(response_data)
 

@@ -56,16 +56,23 @@ export async function createItinerary(info: UserInfo): Promise<string | null> {
         formattedInfo.arrival_date = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
       }
     }
-     
-    const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const response = await fetch(`${VITE_API_URL}/itinerary`, {
+
+    console.log('Sending payload:', JSON.stringify(formattedInfo, null, 2));
+    
+    const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const response = await fetch(`${VITE_API_URL}/api/itinerary`, {
       method: 'POST', 
       headers: { 
-        'Content-Type': 'application/json' 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'  // Explicitly request JSON
       }, 
       body: JSON.stringify(formattedInfo) 
     });
-     
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+  
+  
     // Log the raw response for debugging
     const responseText = await response.text();
     console.log('Raw server response:', responseText);

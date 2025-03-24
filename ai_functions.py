@@ -55,13 +55,13 @@ def create_structured_itinerary(user_info, location_info):
     
     # Create a day-by-day itinerary structure
     itinerary = {
-        "destination": user_info['destination'],
-        "country": location_info.get('country', ''),
-        "budget": user_info['budget'],
-        "arrival_date": user_info['arrival_date'],
-        "duration": duration,
-        "people": user_info['people'],
-        "accommodation": user_info['shelter'],
+        "destination": str(user_info['destination']),
+        "country": str(location_info.get('country', '')),
+        "budget": str(user_info['budget']),
+        "arrival_date": str(user_info['arrival_date']),
+        "duration": int(duration),
+        "people": str(user_info['people']),
+        "accommodation": str(user_info['shelter']),
         "days": []
     }
     
@@ -202,6 +202,8 @@ def create_structured_itinerary(user_info, location_info):
     itinerary["travel_tips"] = generate_travel_tips(user_info['destination'], location_info)
     
     return itinerary
+
+
 
 def generate_travel_tips(destination, location_info):
     tip_prompt = f"""
