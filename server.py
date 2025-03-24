@@ -54,8 +54,13 @@ def create_itinerary():
         itinerary_id = str(uuid.uuid4())
 
         # Get real location info
-        location_info = get_location_info(destination)
-        if not location_info:
+        try:
+            location_info = get_location_info(destination)
+            if not location_info:
+                log_to_supabase(f"Location info fetch failed for: {destination}")
+                location_info = {"name": destination}
+        except Exception as e:
+            log_to_supabase(f"Location info error: {str(e)}")
             location_info = {"name": destination}
 
         # Create the itinerary using AI
@@ -80,6 +85,8 @@ def create_itinerary():
         print(error_msg)
         log_to_supabase(error_msg)
         return jsonify({"error": error_msg}), 500
+    
+
 
 @app.route('/api/itinerary/<itinerary_id>', methods=['GET'])
 def get_itinerary(itinerary_id):
@@ -155,6 +162,13 @@ def update_itinerary(itinerary_id):
         error_msg = f"Error updating itinerary: {str(e)}"
         log_to_supabase(error_msg)
         return jsonify({"error": error_msg}), 500
+    
+@app.after_request
+def add_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

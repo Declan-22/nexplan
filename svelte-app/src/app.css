@@ -55,6 +55,9 @@
   --transition-fast: 150ms;
   --transition-normal: 300ms;
   --transition-slow: 500ms;
+
+  /* logo */
+  --logo-filter: invert(0); /* Default: No inversion */
 }
 
 /* Default Theme (Dark) */
@@ -64,6 +67,7 @@
   --text-primary: var(--light-text);
   --text-secondary: var(--neutral-300);
   --border-color: var(--border-dark);
+
 }
 
 /* Light Theme */
@@ -73,6 +77,7 @@
   --text-primary: var(--dark-text);
   --text-secondary: var(--neutral-700);
   --border-color: var(--border-light);
+  --logo-filter: invert(1);
 }
 
 /* Global Styles */
@@ -81,6 +86,10 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+.theme-logo {
+  filter: var(--logo-filter);
 }
 
 /* Animation Classes */

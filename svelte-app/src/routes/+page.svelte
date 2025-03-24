@@ -36,8 +36,9 @@
   <div class="min-h-screen py-12">
     <div class="max-w-7xl mx-auto px-4">
       <div class="text-center mb-12 space-y-4">
-        <h1 class="text-4xl font-semibold mb-2 blink">
-          <span class="nexplan-logo">
+        <h1 class="text-4xl font-semibold mb-2 flex items-center justify-center gap-2">
+          <img src="/nexplanlogo.png" alt="NexPlan Logo" class="h-10 w-10 transition-all duration-300 theme-logo" />
+          <span class="nexplan-logo flex items-center">
             <span class="nex">nex</span><span class="plan">plan</span>
           </span>
         </h1>
