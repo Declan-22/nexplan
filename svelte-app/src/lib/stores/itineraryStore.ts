@@ -39,42 +39,69 @@ export async function fetchItinerary(id: string): Promise<Itinerary | null> {
 // For createItinerary, use the full URL if proxy isn't working:
 export async function createItinerary(info: UserInfo): Promise<string | null> {
   try {
+    // Validate required fields before sending
+    const requiredFields = ['destination', 'budget', 'arrival_date', 'duration', 'people', 'shelter', 'activities'];
+    for (const field of requiredFields) {
+      if (!info[field as keyof UserInfo]) {
+        console.error(`Missing required field: ${field}`);
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
+
     // Format the date from YYYY-MM-DD to MM/DD/YYYY
     const formattedInfo = { ...info };
     if (formattedInfo.arrival_date) {
       const dateParts = formattedInfo.arrival_date.split('-');
       if (dateParts.length === 3) {
-        // Convert from YYYY-MM-DD to MM/DD/YYYY
         formattedInfo.arrival_date = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
       }
     }
-    
+     
     const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     const response = await fetch(`${VITE_API_URL}/itinerary`, {
-    
-      
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formattedInfo)
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json' 
+      }, 
+      body: JSON.stringify(formattedInfo) 
     });
-    
-    // Rest of the function remains the same
-    if (!response.ok) {
-      throw new Error('Failed to create itinerary');
+     
+    // Log the raw response for debugging
+    const responseText = await response.text();
+    console.log('Raw server response:', responseText);
+
+    // Try to parse the response as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse JSON:', parseError);
+      console.error('Response text:', responseText);
+      throw new Error('Invalid JSON response from server');
     }
-    
-    const data = await response.json();
-    
-    if (data.itinerary) {
-      currentItinerary.set(data.itinerary);
-      return data.id;
+     
+    // Check for error status in the response
+    if (data.status === 'error') {
+      console.error('Server returned an error:', data.message);
+      throw new Error(data.message || 'Failed to create itinerary');
     }
-    
-    return null;
+
+    // Validate the response structure
+    if (!data.id || !data.itinerary) {
+      console.error('Incomplete response:', data);
+      throw new Error('Incomplete response from server');
+    }
+     
+    // Set the current itinerary
+    currentItinerary.set(data.itinerary);
+    return data.id;
+
   } catch (error) {
     console.error('Error creating itinerary:', error);
+    
+    // Optionally show a user-friendly error message
+    // You might want to add a toast or error notification here
+    
     return null;
   }
 }

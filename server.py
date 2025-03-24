@@ -45,17 +45,46 @@ def gather_user_info():
 @app.route('/api/itinerary', methods=['POST'])
 def create_itinerary():
     try:
-        user_info = request.get_json()
-        if not user_info:
-            return jsonify({"error": "No user information provided"}), 400
+        # Explicitly log the incoming request data
+        raw_data = request.get_data(as_text=True)
+        print(f"Received raw data: {raw_data}")
+        
+        # Try parsing JSON with error handling
+        try:
+            user_info = request.get_json(force=True)
+        except Exception as json_error:
+            print(f"JSON Parsing Error: {json_error}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Invalid JSON: {str(json_error)}"
+            }), 400
 
+        # Validate user_info
+        if not user_info:
+            print("No user information provided")
+            return jsonify({
+                "status": "error", 
+                "message": "No user information provided"
+            }), 400
+
+        # Required field validation
+        required_fields = ['destination', 'budget', 'arrival_date', 'duration', 'people', 'shelter', 'activities']
+        for field in required_fields:
+            if field not in user_info or not user_info[field]:
+                print(f"Missing required field: {field}")
+                return jsonify({
+                    "status": "error", 
+                    "message": f"Missing required field: {field}"
+                }), 400
+
+        # Rest of the code remains the same as in the previous artifact
         destination = user_info.get('destination', 'Unknown Destination')
         budget = user_info.get('budget', 'Unknown Budget')
         itinerary_id = str(uuid.uuid4())
 
-        # Get real location info
+        # Get real location info 
         try:
-            location_info = get_location_info(destination)
+            location_info = get_location_info(destination) 
             if not location_info:
                 log_to_supabase(f"Location info fetch failed for: {destination}")
                 location_info = {"name": destination}
@@ -63,28 +92,64 @@ def create_itinerary():
             log_to_supabase(f"Location info error: {str(e)}")
             location_info = {"name": destination}
 
-        # Create the itinerary using AI
-        itinerary_data = create_structured_itinerary(user_info, location_info)
+        # Create the itinerary using AI 
+        try:
+            itinerary_data = create_structured_itinerary(user_info, location_info)
+        except Exception as e:
+            error_msg = f"Failed to create itinerary: {str(e)}"
+            log_to_supabase(error_msg)
+            print(error_msg)  # Add print for immediate visibility
+            return jsonify({
+                "status": "error", 
+                "message": error_msg
+            }), 500
 
-        # Store in Supabase
-        response = supabase.table('itineraries').insert({
-            "id": itinerary_id,
-            "itinerary_data": json.dumps(itinerary_data),  # Convert to JSON string
-            "destination": destination,
-            "budget": budget,
-            "created_at": datetime.now().isoformat()
-        }).execute()
+        # Ensure itinerary_data is JSON serializable
+        try:
+            json.dumps(itinerary_data)
+        except TypeError as e:
+            error_msg = f"Itinerary data not JSON serializable: {str(e)}"
+            print(error_msg)
+            return jsonify({
+                "status": "error", 
+                "message": error_msg
+            }), 500
 
-        return jsonify({
-            "id": itinerary_id,
-            "itinerary": itinerary_data
-        })
+        # Store in Supabase 
+        try:
+            response = supabase.table('itineraries').insert({ 
+                "id": itinerary_id, 
+                "itinerary_data": json.dumps(itinerary_data),  # Convert to JSON string 
+                "destination": destination, 
+                "budget": budget, 
+                "created_at": datetime.now().isoformat() 
+            }).execute()
+        except Exception as e:
+            error_msg = f"Failed to store itinerary in Supabase: {str(e)}"
+            log_to_supabase(error_msg)
+            print(error_msg)  # Add print for immediate visibility
+            return jsonify({
+                "status": "error", 
+                "message": error_msg
+            }), 500
+
+        # Return a consistent JSON response with debug info
+        response_data = { 
+            "status": "success",
+            "id": itinerary_id, 
+            "itinerary": itinerary_data 
+        }
+        print(f"Returning response: {json.dumps(response_data)}")
+        return jsonify(response_data)
 
     except Exception as e:
-        error_msg = f"Error creating itinerary: {str(e)}"
+        error_msg = f"Unexpected error creating itinerary: {str(e)}"
         print(error_msg)
         log_to_supabase(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({
+            "status": "error", 
+            "message": error_msg
+        }), 500
     
 
 
