@@ -46,6 +46,70 @@ def log_to_supabase(log_message: str):
 def health_check():
     return jsonify({"status": "healthy", "message": "API is running"})
 
+
+
+# Add these routes to server.py
+@app.route('/api/auth/signup', methods=['POST'])
+def signup():
+    try:
+        data = request.get_json()
+        email = data['email']
+        password = data['password']
+        
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        return jsonify({
+            "status": "success",
+            "user": response.user.dict(),
+            "session": response.session.dict()
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+        email = data['email']
+        password = data['password']
+        
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        
+        return jsonify({
+            "status": "success",
+            "user": response.user.dict(),
+            "session": response.session.dict()
+        })
+    
+    except Exception as e:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    try:
+        supabase.auth.sign_out()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/auth/session', methods=['GET'])
+def get_session():
+    try:
+        session = supabase.auth.get_session()
+        return jsonify({
+            "status": "success",
+            "user": session.user.dict() if session else None
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @app.route('/api/gather_info', methods=['POST'])
 def gather_user_info():
     data = request.get_json()
@@ -208,54 +272,81 @@ def get_itinerary(itinerary_id):
 @app.route('/api/itinerary/<itinerary_id>', methods=['PUT'])
 def update_itinerary(itinerary_id):
     try:
+        # Get authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Missing authorization header"}), 401
+            
+        # Verify user session
+        try:
+            session = supabase.auth.get_session()
+            if not session:
+                return jsonify({"error": "Invalid session"}), 401
+        except Exception as auth_error:
+            return jsonify({"error": f"Auth verification failed: {str(auth_error)}"}), 401
+
         data = request.get_json()
-        modification = data.get('modification', '')
-        
-        if not modification:
+        if not data or 'modification' not in data:
             return jsonify({"error": "No modification specified"}), 400
             
-        # Fetch existing itinerary
-        response = supabase.table('itineraries').select('*').eq('id', itinerary_id).execute()
-        
-        if not response.data:
-            return jsonify({"error": "Itinerary not found"}), 404
+        # Fetch existing itinerary with proper error handling
+        try:
+            response = supabase.table('itineraries').select('*').eq('id', itinerary_id).execute()
+            if not response.data:
+                return jsonify({"error": "Itinerary not found"}), 404
+            current_data = response.data[0]
+        except Exception as fetch_error:
+            log_to_supabase(f"Fetch error: {str(fetch_error)}")
+            return jsonify({"error": "Database error"}), 500
+
+        # Build AI prompt with validation
+        try:
+            current_itinerary = json.loads(current_data['itinerary_data'])
+            update_prompt = f"""
+            CURRENT ITINERARY:
+            {json.dumps(current_itinerary, indent=2)}
             
-        current_data = response.data[0]
-        
-        # Build AI prompt
-        update_prompt = f"""
-        CURRENT ITINERARY:
-        {json.dumps(current_data['itinerary_data'])}
-        
-        USER REQUEST:
-        {modification}
-        
-        RULES:
-        1. Keep existing correct info
-        2. Fix any geographical errors
-        3. Never add fictional places
-        4. Ask clarifying questions if request is unclear
-        """
-        
-        # Get AI update
-        # Assuming these are defined elsewhere in your code
-        from ai_functions import get_ai_response
-        ai_response = get_ai_response(update_prompt)
-        
-        # Process response
-        updated_itinerary = json.loads(ai_response)
-        
-        # Update database
-        supabase.table('itineraries').update({
-            "itinerary_data": updated_itinerary
-        }).eq('id', itinerary_id).execute()
-        
-        return jsonify(updated_itinerary)
-        
+            USER MODIFICATION REQUEST:
+            {data['modification']}
+            
+            RULES:
+            1. Maintain valid JSON structure
+            2. Keep existing correct information
+            3. Only use real locations from original data
+            4. Preserve all original fields
+            """
+        except Exception as prompt_error:
+            return jsonify({"error": f"Prompt construction failed: {str(prompt_error)}"}), 400
+
+        # Get AI response with error handling
+        try:
+            from ai_functions import get_ai_response
+            ai_response = get_ai_response(update_prompt)
+            updated_itinerary = json.loads(ai_response)
+        except json.JSONDecodeError:
+            return jsonify({"error": "AI returned invalid JSON"}), 500
+        except Exception as ai_error:
+            return jsonify({"error": f"AI processing failed: {str(ai_error)}"}), 500
+
+        # Update database with proper error handling
+        try:
+            update_response = supabase.table('itineraries').update({
+                "itinerary_data": json.dumps(updated_itinerary),
+                "updated_at": datetime.now().isoformat()
+            }).eq('id', itinerary_id).execute()
+            
+            if not update_response.data:
+                return jsonify({"error": "Update failed"}), 500
+                
+            return jsonify(updated_itinerary)
+            
+        except Exception as db_error:
+            log_to_supabase(f"Database update error: {str(db_error)}")
+            return jsonify({"error": "Database update failed"}), 500
+            
     except Exception as e:
-        error_msg = f"Error updating itinerary: {str(e)}"
-        log_to_supabase(error_msg)
-        return jsonify({"error": error_msg}), 500
+        log_to_supabase(f"Global update error: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
     
 @app.after_request
 def add_headers(response):

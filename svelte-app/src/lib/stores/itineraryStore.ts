@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import type { Itinerary, UserInfo } from '$lib/types/types';
+import { getSupabaseSession, isSessionValid } from '$lib/auth';
 
 
 // Store for the current itinerary
@@ -126,23 +127,33 @@ function validateForm(info: UserInfo): boolean {
 // Function to update an existing itinerary
 export async function updateItinerary(id: string, modification: string): Promise<Itinerary | null> {
   try {
-    const response = await fetch(`/api/itinerary/${id}`, {
+    const session = await getSupabaseSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const response = await fetch(`${VITE_API_URL}/api/itinerary/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
       },
       body: JSON.stringify({ modification })
     });
     
+    const responseData = await response.json();
+    
     if (!response.ok) {
-      throw new Error('Failed to update itinerary');
+      throw new Error(responseData.error || 'Failed to update itinerary');
     }
     
-    const data = await response.json();
-    currentItinerary.set(data);
-    return data;
-  } catch (error) {
-    console.error('Error updating itinerary:', error);
-    return null;
-  }
+    currentItinerary.set(responseData);
+    return responseData;
+// Modify the updateItinerary catch block
+    } catch (error) {
+      if (error instanceof Error && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+        window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+      }
+      console.error('Error updating itinerary:', error);
+      throw error;
+    }
 }
