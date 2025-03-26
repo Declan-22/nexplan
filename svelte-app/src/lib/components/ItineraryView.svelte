@@ -136,10 +136,10 @@
           <span class="font-normal">Budget:</span> {itinerary.budget}
         </div>
         <div class="bg-[var(--bg-primary)] p-3 rounded shadow">
-          <span class="font-normal">Travelers:</span> {itinerary.people}
+          <span class="font-normal">Travelers:</span> {itinerary.people || 'Not specified'}
         </div>
         <div class="bg-[var(--bg-primary)] p-3 rounded shadow">
-          <span class="font-normal">Accommodation:</span> {itinerary.accommodation}
+          <span class="font-normal">Accommodation:</span> {itinerary.accommodation || 'Not specified'}
         </div>
       </div>
       
