@@ -180,3 +180,117 @@ body {
 .btn-secondary:hover {
   background-color: var(--neutral-300);
 }
+
+.sidebar-transition {
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content {
+  transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tooltip {
+  pointer-events: none;
+  transition: opacity 150ms ease-in-out;
+  z-index: 50;
+}
+
+.sidebar {
+  min-height: 100vh; /* Ensure full height */
+  position: fixed;
+  top: 4rem;
+  left: 0;
+  width: var(--sidebar-width, 16rem); /* default width for sidebar */
+}
+
+.node {
+  transition: 
+    transform 0.1s ease-out,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.node:hover {
+  z-index: 10;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+}
+
+.connection-point {
+  position: relative;
+  top: 8px;
+  cursor: pointer;
+}
+
+.connection-point:hover {
+  transform: scale(1.5);
+}
+
+/* Better connection lines */
+path.connection {
+  transition: d 0.3s ease-out;
+}
+
+/* Dragging state visual feedback */
+.dragging {
+  filter: drop-shadow(0 0 8px rgba(81, 145, 72, 0.3));
+}
+
+/* app.css */
+.relative.h-screen {
+  background-color: var(--bg-primary);
+}
+
+svg {
+  pointer-events: none;
+}
+
+.node {
+  pointer-events: auto;
+}
+
+.node-card {
+  box-shadow: 
+    0 2px 4px rgba(0,0,0,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.node-card:hover {
+  box-shadow: 
+    0 4px 8px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  transform: translateY(-1px);
+}
+
+/* Connection lines */
+.connection-line {
+  stroke: var(--brand-green);
+  stroke-width: 2;
+  marker-end: url(#arrowhead);
+  transition: d 0.3s ease;
+}
+
+/* Floating controls */
+.floating-controls {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+/* In app.css */
+.silo-card { 
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  transition: all var(--transition-fast) !important;
+}
+.silo-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+}
+
+.node-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}

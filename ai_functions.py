@@ -41,10 +41,12 @@ def get_places_of_interest(lat, lng, radius=5000, amenity_type=None):
     query = f"""
     [out:json];
     (
-      node["tourism"~"hotel|guesthouse|attraction"]
-        (around:{radius},{lat},{lng});
-      node["amenity"~"restaurant|cafe|bar"]
-        (around:{radius},{lat},{lng});
+        node["tourism"~"hotel|guesthouse|attraction"](around:{radius},{lat},{lng});
+        way["tourism"~"hotel|guesthouse|attraction"](around:{radius},{lat},{lng});
+        relation["tourism"~"hotel|guesthouse|attraction"](around:{radius},{lat},{lng});
+        node["amenity"~"restaurant|cafe|bar"](around:{radius},{lat},{lng});
+        way["amenity"~"restaurant|cafe|bar"](around:{radius},{lat},{lng});
+        relation["amenity"~"restaurant|cafe|bar"](around:{radius},{lat},{lng});
     );
     out center;
     """
