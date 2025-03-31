@@ -6,6 +6,9 @@ import os
 import uuid
 import json
 from datetime import datetime, timedelta
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
 CORS(app, 
@@ -121,13 +124,24 @@ def gather_user_info():
         return jsonify({"status": "error", "message": "Failed to gather user info"}), 400
 
 @app.route('/api/itinerary', methods=['POST'])
-def create_itinerary():
-    
-    if not request.is_json:
-        return jsonify({
-            "status": "error", 
-            "message": "Request must be JSON"
-        }), 400
+def generate_itinerary():
+    logging.info("Received a request for itinerary generation")
+
+    try:
+        data = request.get_json()
+        logging.debug(f"Request data: {data}")
+
+        if not data:
+            logging.error("Empty or invalid JSON payload received")
+            return jsonify({"error": "Invalid request data"}), 400
+    except Exception as e:
+        logging.exception("Error parsing JSON request")
+        return jsonify({"error": "Invalid JSON format"}), 400
+
+    logging.info("Calling AI to generate structured itinerary...")
+    response_data = create_structured_itinerary(data)
+
+
     
     print("Full request headers:", request.headers)
     print("Request content type:", request.content_type)
@@ -183,11 +197,13 @@ def create_itinerary():
 
         # Create the itinerary using AI 
         try:
+            logging.info("Calling Llama 3.2 to generate itinerary...")
             itinerary_data = create_structured_itinerary(user_info, location_info)
+            logging.debug(f"AI response: {itinerary_data}")
         except Exception as e:
             error_msg = f"Failed to create itinerary: {str(e)}"
             log_to_supabase(error_msg)
-            print(error_msg)  # Add print for immediate visibility
+            logging.error(error_msg)
             return jsonify({
                 "status": "error", 
                 "message": error_msg
