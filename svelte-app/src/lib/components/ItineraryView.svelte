@@ -48,9 +48,9 @@
     
     loading = true;
     try {
-      const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://nexplan.onrender.com';
-      const response = await fetch(`${VITE_API_URL}/api/itinerary/${itineraryId}`);
-      console.log(`Fetching from: ${VITE_API_URL}/api/itinerary/${itineraryId}`);
+      const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://nexplan.onrender.com/api';
+      const response = await fetch(`${VITE_API_URL}/itinerary/${itineraryId}`);
+      console.log(`Fetching from: ${VITE_API_URL}/itinerary/${itineraryId}`);
       
       if (!response.ok) {
         const errorData = await response.json();

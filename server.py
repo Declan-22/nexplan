@@ -10,12 +10,8 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
-app = Flask(__name__, static_folder='../svelte-app/build', static_url_path='')
-CORS(app, 
-     origins=["http://localhost:5173", "https://nexplan-wvdf.onrender.com/", "http://nexplan-wvdf.onrender.com/api"],
-     supports_credentials=True,
-     methods=["GET", "POST", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"])
+app = Flask(__name__)
+CORS(app)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
