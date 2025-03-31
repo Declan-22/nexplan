@@ -1,78 +1,106 @@
-// src/lib/utils/nodeUtils.ts
-import type { SiloNode, SiloEdge} from '$lib/stores/siloStore';
-import { NODE_TYPES } from '$lib/stores/nodeTypes';
+import type { SiloNode, SiloEdge, Position } from '$lib/stores/siloStore';
+import { NODE_TYPES } from '$lib/types/nodes';
 import type { NodeType } from '$lib/types/nodes';
-import type { Position } from '$lib/stores/siloStore';
 
-// Connection path calculation (curved lines)
+// Bezier curve connection path calculation for smooth connections
 export function calculateConnectionPath(start: Position, end: Position) {
-  const midX = (start.x + end.x) / 2;
-  const midY = (start.y + end.y) / 2;
-  return `M${start.x},${start.y} 
-          Q${midX},${start.y} ${midX},${midY}
-          T${end.x},${end.y}`;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const curvature = Math.min(Math.max(Math.abs(dx) * 0.25, 50), 150);
+  
+  return `M ${start.x} ${start.y}
+          C ${start.x + curvature} ${start.y},
+            ${end.x - curvature} ${end.y},
+            ${end.x} ${end.y}`;
 }
+
+// Connection validation rules
 export const VALID_CONNECTIONS: Record<NodeType, NodeType[]> = {
-  itinerary: ['day'],
+  itinerary: ['day', 'output'],
   day: ['transport', 'restaurant', 'hotel', 'activity', 'landmark'],
-  transport: ['day', 'restaurant', 'hotel'],
-  restaurant: ['day', 'transport'],
-  hotel: ['day', 'transport'],
-  activity: ['day'],
-  landmark: ['day'],
+  transport: ['restaurant', 'hotel', 'activity', 'landmark', 'day'],
+  restaurant: ['transport', 'activity', 'day'],
+  hotel: ['transport', 'day'],
+  activity: ['transport', 'restaurant', 'day'],
+  landmark: ['transport', 'day'],
   output: []
 };
-// Connection validation rules
-export function validateConnection(sourceType: NodeType, targetType: NodeType) {
-    return VALID_CONNECTIONS[sourceType].includes(targetType);
-  }
 
-// Grid snapping
-export function snapToGrid(position: { x: number; y: number }, gridSize = 20): { x: number; y: number } {
+// Validate if a connection between two node types is valid
+export function validateConnection(sourceType: NodeType, targetType: NodeType): boolean {
+  return VALID_CONNECTIONS[sourceType]?.includes(targetType) || false;
+}
+
+// Determine the validation status of a node (e.g., if it has required connections)
+export function validateNodeConnections(node: SiloNode, edges: SiloEdge[], nodes: SiloNode[]): ValidationResult {
+  const nodeConnections = edges.filter(edge => 
+    edge.source === node.id || edge.target === node.id
+  );
+  
+  const connectedNodeTypes = nodeConnections.map(edge => {
+    const connectedId = edge.source === node.id ? edge.target : edge.source;
+    const connectedNode = nodes.find(n => n.id === connectedId);
+    return connectedNode?.type;
+  }).filter(Boolean) as NodeType[];
+  
+  const result: ValidationResult = {
+    isValid: true,
+    missingConnections: []
+  };
+  
+  // Different nodes have different validation requirements
+  if (node.type === 'activity') {
+    if (!connectedNodeTypes.includes('transport')) {
+      result.isValid = false;
+      result.missingConnections.push('transport');
+    }
+  } else if (node.type === 'restaurant') {
+    if (!connectedNodeTypes.includes('transport') && !connectedNodeTypes.some(type => ['day', 'activity'].includes(type))) {
+      result.isValid = false;
+      result.missingConnections.push('transport');
+    }
+  } else if (node.type === 'hotel') {
+    if (!connectedNodeTypes.includes('transport') && !connectedNodeTypes.includes('day')) {
+      result.isValid = false;
+      result.missingConnections.push('transport');
+    }
+  }
+  
+  return result;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  missingConnections: NodeType[];
+}
+
+// Grid snapping with improved usability
+export function snapToGrid(position: Position, gridSize = 20): Position {
   return {
     x: Math.round(position.x / gridSize) * gridSize,
     y: Math.round(position.y / gridSize) * gridSize
   };
 }
 
-// Get node symbol/icon
-export function getNodeSymbol(nodeType: NodeType): string {
-  return NODE_TYPES[nodeType]?.icon || '⭕';
-}
-
-// Find connections for a node
-export function getNodeConnections(nodeId: string, edges: SiloEdge[]): SiloEdge[] {
-  return edges.filter(
-    edge => edge.source === nodeId || edge.target === nodeId
-  );
-}
-
-// Error formatting for connection validation
-export function formatConnectionError(error: { isValid: boolean; message?: string }, nodes: SiloNode[]): string {
-  if (!error.message) return '';
+// Find optimal position for a new node
+export function getOptimalNodePosition(nodes: SiloNode[], viewportWidth?: number, viewportHeight?: number): Position {
+  if (nodes.length === 0) {
+    return { x: 200, y: 200 };
+  }
   
-  // Add AI suggestions for common errors
-  const suggestions: Record<string, string> = {
-    'restaurant-transport': 'Try adding a transportation node between restaurant and activity',
-    'hotel-day': 'Connect hotel to a specific day node',
-    'output-itinerary': 'Output should connect directly to the main itinerary node'
-  };
-
-  const suggestionKey = `${error.message.split(' ')[2]}-${error.message.split(' ')[4]}`;
-  return `${error.message}. ${suggestions[suggestionKey] || ''}`;
-}
-
-// Calculate node position for new connections
-export function getNewNodePosition(existingNodes: SiloNode[], gridSize = 20): { x: number; y: number } {
-  const baseX = 100;
-  const baseY = 100;
-  const spacing = 200;
-
-  // Find rightmost node position
-  const maxX = existingNodes.reduce((max, node) => Math.max(max, node.position.x), baseX);
+  // Find the rightmost and bottommost nodes
+  const maxX = Math.max(...nodes.map(n => n.position.x));
+  const maxY = Math.max(...nodes.map(n => n.position.y));
   
-  return snapToGrid({
-    x: maxX + spacing,
-    y: baseY + (existingNodes.length % 3) * spacing
-  }, gridSize);
+  // If we have many nodes in a row, start a new column
+  const nodesAtMaxX = nodes.filter(n => Math.abs(n.position.x - maxX) < 50).length;
+  
+  if (nodesAtMaxX > 2 || (viewportWidth && maxX > viewportWidth - 300)) {
+    // Start a new column
+    const minX = Math.min(...nodes.map(n => n.position.x));
+    return { x: minX, y: maxY + 200 };
+  }
+  
+  // Otherwise, add to the right
+  return { x: maxX + 250, y: nodes[nodes.length - 1].position.y };
 }

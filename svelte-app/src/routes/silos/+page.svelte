@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { siloStore, updateNodePosition, addNode, getNodePosition, renameSilo, deleteSilo, createConnection, type Position } from '$lib/stores/siloStore';
-  import Node from '$lib/components/Node.svelte';
+  import Node from "$lib/components/Node.svelte";
   import NodeLibrary from '$lib/components/NodeLibrary.svelte';
   import { calculateConnectionPath } from '$lib/utils/nodeUtils';
   import type { SiloNode } from '$lib/stores/siloStore';
@@ -115,7 +115,7 @@
       <Node 
         {node} 
         on:dragstart={() => activeNode = node}
-        on:positionupdate={({ detail }) => updateNodePosition(silo.id, node.id, detail)}
+        on:positionupdate={({ detail }: { detail: Position }) => updateNodePosition(silo.id, node.id, detail)}
         on:connectionstart={handleConnectionStart}
         on:connectionend={handleConnectionEnd}
       />

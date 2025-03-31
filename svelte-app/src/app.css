@@ -269,7 +269,8 @@ svg {
   stroke: var(--brand-green);
   stroke-width: 2;
   marker-end: url(#arrowhead);
-  transition: d 0.3s ease;
+  fill: none;
+  transition: d 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Floating controls */
@@ -293,4 +294,8 @@ svg {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
+  transition: 
+  transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+  box-shadow 0.2s ease,
+  border-color 0.2s ease;
 }
